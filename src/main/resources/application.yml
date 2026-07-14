@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: backend
+  data:
+    mongodb:
+      uri: mongodb://admin:M0ng0%40%232026%21xP@74.0.5.52:27017/kodex?authSource=admin
+      auto-index-creation: true
+
+jwt:
+  secret: your-secret-key-change-this-in-production
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:4200
