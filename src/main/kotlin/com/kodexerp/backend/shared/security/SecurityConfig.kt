@@ -20,7 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    private val customUserDetailsService: CustomUserDetailsService
+    private val customUserDetailsService: CustomUserDetailsService,
+    private val loginRateLimitFilter: LoginRateLimitFilter,
+    private val rateLimitFilter: RateLimitFilter
 ) {
 
     @Bean
@@ -28,7 +30,36 @@ class SecurityConfig(
         http
             .csrf { it.disable() }
             .cors { }
-            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .headers { headers ->
+                headers
+                    .contentSecurityPolicy { csp ->
+                        csp.policyDirectives(
+                            "default-src 'self'; " +
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+                            "style-src 'self' 'unsafe-inline'; " +
+                            "img-src 'self' data: https:; " +
+                            "font-src 'self' data:; " +
+                            "connect-src 'self'; " +
+                            "frame-ancestors 'none';"
+                        )
+                    }
+                    .frameOptions { it.deny() }
+                    .xssProtection { it.disable() }
+                    .httpStrictTransportSecurity { hsts ->
+                        hsts
+                            .includeSubDomains(true)
+                            .maxAgeInSeconds(31536000)
+                            .preload(true)
+                    }
+                    .referrerPolicy { it.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
+                    .permissionsPolicy { permissions ->
+                        permissions
+                            .policy("geolocation=()", "microphone=()", "camera=()")
+                    }
+            }
+            .sessionManagement { 
+                it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            }
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/auth/**").permitAll()
@@ -37,6 +68,8 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .authenticationProvider(authenticationProvider())
+            .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()

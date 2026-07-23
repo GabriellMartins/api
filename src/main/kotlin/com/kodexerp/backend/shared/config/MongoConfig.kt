@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.config.AbstractMongoClientConfiguration
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories
 
 @Configuration
-@EnableMongoRepositories(basePackages = ["com.kodexerp.backend"])
+@EnableMongoRepositories(basePackages = ["com.kodexerp.backend.auth", "com.kodexerp.backend.admin", "com.kodexerp.backend.subscription", "com.kodexerp.backend.customers"])
 class MongoConfig : AbstractMongoClientConfiguration() {
 
     override fun getDatabaseName(): String {
